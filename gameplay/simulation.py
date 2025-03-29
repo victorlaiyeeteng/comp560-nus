@@ -1,4 +1,5 @@
-from ultimate_tic_tac_toe import UltimateTicTacToe, RandomAgent, SimpleStrategyAgent
+from ultimate_tic_tac_toe.UltimateTicTacToe import UltimateTicTacToe
+from ultimate_tic_tac_toe.agents import RandomAgent, SimpleStrategyAgent
 
 def simulate_game(agent1, agent2, print_game=False):
     game = UltimateTicTacToe()
@@ -13,7 +14,7 @@ def simulate_game(agent1, agent2, print_game=False):
         move = current_agent.get_move(game)
         
         if not move:
-            break  # No moves left
+            break
             
         board_pos, cell_pos = move
         if print_game:
@@ -35,7 +36,6 @@ def simulate_game(agent1, agent2, print_game=False):
     return game.winner
 
 if __name__ == "__main__":
-    # Run a single game with printing
     print("Starting a single game with printing...")
     agent1 = SimpleStrategyAgent(1)  # X
     agent2 = RandomAgent(2)          # O
