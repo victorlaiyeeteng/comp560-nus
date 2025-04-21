@@ -1,26 +1,12 @@
 """
-This script implements a Tic-Tac-Toe AI using the Minimax algorithm with alpha-beta pruning and a heuristic evaluation function. 
-The AI is designed to play on a 9x9 board divided into 3x3 sub-boards, resembling a game of Ultimate Tic-Tac-Toe.
-Key Components:
-1. **Minimax Algorithm**:
-    - The minimax function recursively evaluates all possible moves to determine the optimal move for the AI.
-    - Alpha-beta pruning is used to optimize the search by eliminating branches that cannot influence the final decision.
-2. **Heuristic Evaluation**:
-    - The `evaluate_heuristic` function assigns scores to board states to guide the AI's decision-making process.
-    - The heuristic considers the following:
-      - **Winning Opportunities**: Lines with two 'X' marks and one empty space are prioritized (+3 points).
-      - **Blocking Opponent**: Lines with two 'O' marks and one empty space are penalized (-4 points) to block the opponent's winning chances.
-      - **Early Formations**: Lines with one 'X' and two empty spaces are slightly rewarded (+1 point) to encourage good early-game positioning.
-      - **Opponent Formations**: Lines with one 'O' and two empty spaces are slightly penalized (-1 point) to discourage the opponent's early-game positioning.
-3. **Macro and Sub-Board Management**:
-    - The game operates on a macro board (3x3) and a larger board (9x9).
-    - The macro board tracks the state of each sub-board (won by 'X', 'O', or tied).
-    - The AI determines valid moves based on the macro board and sub-board constraints.
-4. **Game Loop**:
-    - The game loop processes opponent moves, updates the board states, and computes the AI's next move using the minimax algorithm.
-5. **Alpha-Beta Pruning**:
-    - Alpha (best score for the maximizer) and Beta (best score for the minimizer) are used to prune branches in the minimax tree, improving efficiency.
-The heuristic evaluation function plays a crucial role in guiding the AI's decisions, especially in the early and mid-game stages where the game tree is too large to fully explore.
+Heuristic Evaluation:
+    - To estimate board quality since full-depth search is infeasible
+      - Winning Opportunities: Lines with two 'X' marks and one empty space are prioritized (+3 points).
+      - Blocking Opponent: Lines with two 'O' marks and one empty space are penalized (-4 points) to block the opponent's winning chances.
+      - Early Formations: Lines with one 'X' and two empty spaces are slightly rewarded (+1 point) to encourage good early-game positioning.
+      - Opponent Formations: Lines with one 'O' and two empty spaces are slightly penalized (-1 point) to discourage the opponent's early-game positioning.
+Alpha-Beta Pruning:
+    - Alpha (best score for the maximizer) and Beta (best score for the minimizer) prunes branches in the minimax tree.
 """
 
 import sys
@@ -30,7 +16,6 @@ import random
 
 def game_tie(board):
     return all(element != '' for sublst in board for element in sublst)
-
 
 def check_tris(player, board):
     for row in board:
@@ -43,19 +28,15 @@ def check_tris(player, board):
         return True
     return False
 
-
 def evaluate_heuristic(board):
     score = 0
     lines = [
-        # Rows
         [board[0][0], board[0][1], board[0][2]],
         [board[1][0], board[1][1], board[1][2]],
         [board[2][0], board[2][1], board[2][2]],
-        # Columns
         [board[0][0], board[1][0], board[2][0]],
         [board[0][1], board[1][1], board[2][1]],
         [board[0][2], board[1][2], board[2][2]],
-        # Diagonals
         [board[0][0], board[1][1], board[2][2]],
         [board[0][2], board[1][1], board[2][0]]
     ]
