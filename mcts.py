@@ -202,8 +202,11 @@ while True:
 
     root = Node(state.copy())
     start = time.time()
+    iterations = 0
     while time.time() - start < time_limit:
         root.mcts_iteration()
+        iterations += 1
+    print(f"MCTS iterations run: {iterations}", file=sys.stderr)
 
     best_child = max(root.children, key=lambda c: c.visits)
     best_move = best_child.move
