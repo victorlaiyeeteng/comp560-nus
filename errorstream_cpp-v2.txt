@@ -1,0 +1,124 @@
+Standard Error Stream:
+MCTS iterations run: 8521
+01
+41
+02
+41
+Standard Error Stream:
+MCTS iterations run: 910
+03
+41
+04
+41
+Standard Error Stream:
+MCTS iterations run: 977
+05
+41
+06
+41
+Standard Error Stream:
+MCTS iterations run: 995
+07
+41
+08
+41
+Standard Error Stream:
+MCTS iterations run: 1065
+09
+41
+10
+41
+Standard Error Stream:
+MCTS iterations run: 1083
+11
+41
+12
+41
+Standard Error Stream:
+MCTS iterations run: 1111
+13
+41
+14
+41
+Standard Error Stream:
+MCTS iterations run: 1187
+15
+41
+16
+41
+Standard Error Stream:
+MCTS iterations run: 1230
+17
+41
+18
+41
+Standard Error Stream:
+MCTS iterations run: 1320
+19
+41
+20
+41
+Standard Error Stream:
+MCTS iterations run: 1367
+21
+41
+22
+41
+Standard Error Stream:
+MCTS iterations run: 1433
+23
+41
+24
+41
+Standard Error Stream:
+MCTS iterations run: 1573
+25
+41
+26
+41
+Standard Error Stream:
+MCTS iterations run: 1715
+27
+41
+28
+41
+Standard Error Stream:
+MCTS iterations run: 1893
+29
+41
+30
+41
+Standard Error Stream:
+MCTS iterations run: 2348
+31
+41
+32
+41
+Standard Error Stream:
+MCTS iterations run: 3324
+33
+41
+34
+41
+Standard Error Stream:
+MCTS iterations run: 4345
+35
+41
+36
+41
+Standard Error Stream:
+MCTS iterations run: 7697
+37
+41
+38
+41
+Standard Error Stream:
+MCTS iterations run: 21497
+39
+41
+40
+41
+Standard Error Stream:
+MCTS iterations run: 27019
+41
+41
