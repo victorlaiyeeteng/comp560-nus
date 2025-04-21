@@ -11,121 +11,117 @@
 using namespace std;
 
 // ----------------------------------------------------------------------
-// Game State for Ultimate Tic-Tac-Toe
+// Bitboard Constants
+// ----------------------------------------------------------------------
+static const int FILLED_MASK = 0x1FF;  // lower 9 bits set
+static const array<int,8> WIN_LINES = {
+    0x7,    // row 0:   000000111
+    0x38,   // row 1:   000111000
+    0x1C0,  // row 2:   111000000
+    0x49,   // col 0:   001001001
+    0x92,   // col 1:   010010010
+    0x124,  // col 2:   100100100
+    0x111,  // diag 1:  100010001
+    0x54    // diag 2:  001010100
+};
+
+// ----------------------------------------------------------------------
+// Game State with Bit Encoding
 // ----------------------------------------------------------------------
 struct State {
-    array<array<int,9>,9> board;            // 9x9 board: 0=empty, 1=player1, -1=player2
-    array<array<int,3>,3> local_winner;      // 3x3 local board winners: 0=ongoing, 1/-1=won
-    int next_player;                         // who plays next: 1 (us) or -1 (opp)
-    pair<int,int> last_move;                 // last move (r,c), (-1,-1) if none
+    // Each sub-board: lower 9 bits for X, next 9 bits for O
+    array<int,9> sub;
+    int sbIndex;           // which sub-board to play (0–8), or 9 = any
+    bool turnX;            // true = X to play, false = O
 
-    State() {
-        for(auto &row: board) row.fill(0);
-        for(auto &row: local_winner) row.fill(0);
-        next_player = 1;
-        last_move = {-1,-1};
+    // Meta boards: bitmask of won (or drawn) sub-boards
+    int metaX, metaO, metaD;
+    int winner;            // 0 = ongoing, 1=X wins, -1=O wins, 2=draw
+
+    State(): sub{}, sbIndex(9), turnX(true), metaX(0), metaO(0), metaD(0), winner(0) {}
+    State copy() const { return *this; }
+
+    // Check if bitmask m has any winning line
+    static bool isWin(int m) {
+        for(int w: WIN_LINES)
+            if((m & w) == w) return true;
+        return false;
     }
 
-    State copy() const {
-        State st;
-        st.board = board;
-        st.local_winner = local_winner;
-        st.next_player = next_player;
-        st.last_move = last_move;
-        return st;
-    }
-
+    // Generate all valid moves respecting the last sbIndex (const-safe)
     vector<pair<int,int>> get_valid_moves() const {
         vector<pair<int,int>> moves;
-        if (last_move.first == -1) {
-            for(int r=0; r<9; ++r)
-                for(int c=0; c<9; ++c)
-                    if(board[r][c] == 0) moves.emplace_back(r,c);
-            return moves;
-        }
-        int lr = last_move.first, lc = last_move.second;
-        int br = lr % 3, bc = lc % 3;
-        bool block_full = true;
-        for(int i=0;i<3;++i) for(int j=0;j<3;++j)
-            if(board[3*br+i][3*bc+j] == 0) block_full = false;
-        if(local_winner[br][bc] != 0 || block_full) {
-            for(int r=0; r<9; ++r)
-                for(int c=0; c<9; ++c)
-                    if(board[r][c] == 0) moves.emplace_back(r,c);
-        } else {
-            for(int i=0;i<3;++i)
-                for(int j=0;j<3;++j) {
-                    int r = 3*br+i, c = 3*bc+j;
-                    if(board[r][c] == 0) moves.emplace_back(r,c);
+        auto add_moves = [&](int s) {
+            int xb = sub[s] & FILLED_MASK;
+            int ob = (sub[s] >> 9) & FILLED_MASK;
+            int filled = xb | ob;
+            for(int i = 0; i < 9; ++i) {
+                if(!(filled & (1<<i))) {
+                    int r = (s/3)*3 + i/3;
+                    int c = (s%3)*3 + i%3;
+                    moves.emplace_back(r, c);
                 }
+            }
+        };
+
+        int targetIndex = sbIndex;
+        if(targetIndex < 9) {
+            bool closed = ((metaX|metaO|metaD) >> targetIndex) & 1;
+            int xb = sub[targetIndex] & FILLED_MASK;
+            int ob = (sub[targetIndex] >> 9) & FILLED_MASK;
+            bool full = ((xb|ob) == FILLED_MASK);
+            if(closed || full) targetIndex = 9;
+        }
+        if(targetIndex == 9) {
+            for(int s = 0; s < 9; ++s) {
+                if(((metaX|metaO|metaD) >> s) & 1) continue;
+                add_moves(s);
+            }
+        } else {
+            add_moves(targetIndex);
         }
         return moves;
     }
 
+    // Apply a move and update sub/meta boards and next player
     void apply_move(const pair<int,int>& mv) {
         int r = mv.first, c = mv.second;
-        int p = next_player;
-        board[r][c] = p;
-        last_move = mv;
-        int br = r/3, bc = c/3;
-        if(local_winner[br][bc] == 0) {
-            vector<int> cells;
-            for(int i=0;i<3;++i)
-                for(int j=0;j<3;++j)
-                    cells.push_back(board[3*br+i][3*bc+j]);
-            static const vector<array<int,3>> lines = {{0,1,2},{3,4,5},{6,7,8},
-                                                      {0,3,6},{1,4,7},{2,5,8},
-                                                      {0,4,8},{2,4,6}};
-            for(auto &ln: lines) {
-                if(cells[ln[0]] == p && cells[ln[1]] == p && cells[ln[2]] == p) {
-                    local_winner[br][bc] = p;
-                    break;
-                }
-            }
+        int s = (r/3)*3 + (c/3);
+        int pos = (r%3)*3 + (c%3);
+        if(turnX) sub[s] |= 1 << pos;
+        else      sub[s] |= 1 << (pos+9);
+
+        // Update sub-board status
+        int xb = sub[s] & FILLED_MASK;
+        int ob = (sub[s] >> 9) & FILLED_MASK;
+        if(!((metaX|metaO|metaD) & (1<<s))) {
+            if(isWin(xb))                metaX |= 1<<s;
+            else if(isWin(ob))           metaO |= 1<<s;
+            else if((xb|ob) == FILLED_MASK) metaD |= 1<<s;
         }
-        next_player = -p;
+
+        // Determine overall winner or draw
+        if(isWin(metaX))        winner = 1;
+        else if(isWin(metaO))   winner = -1;
+        else if(((metaX|metaO|metaD) == ((1<<9)-1))) winner = 2;
+
+        // Next sbIndex: target sub-board or any if closed/drawn
+        int target = pos;
+        if(((metaX|metaO|metaD) >> target) & 1) sbIndex = 9;
+        else                                   sbIndex = target;
+
+        turnX = !turnX;
     }
 
     bool is_terminal() const {
-        static const vector<array<int,6>> lines = {{0,0,0,1,0,2},{1,0,1,1,1,2},{2,0,2,1,2,2},
-                                                    {0,0,1,0,2,0},{0,1,1,1,2,1},{0,2,1,2,2,2},
-                                                    {0,0,1,1,2,2},{0,2,1,1,2,0}};
-        for(auto &ln: lines) {
-            int a = local_winner[ln[0]][ln[1]];
-            int b = local_winner[ln[2]][ln[3]];
-            int c = local_winner[ln[4]][ln[5]];
-            if(a!=0 && a==b && b==c) return true;
-        }
-        for(int i=0;i<3;++i) for(int j=0;j<3;++j)
-            if(local_winner[i][j] == 0) {
-                bool full = true;
-                for(int ii=0;ii<3;++ii)
-                    for(int jj=0;jj<3;++jj)
-                        if(board[3*i+ii][3*j+jj] == 0) full = false;
-                if(!full) return false;
-            }
-        return true;
+        return winner != 0;
     }
 
     int get_winner() const {
-        static const vector<array<int,6>> lines = {{0,0,0,1,0,2},{1,0,1,1,1,2},{2,0,2,1,2,2},
-                                                    {0,0,1,0,2,0},{0,1,1,1,2,1},{0,2,1,2,2,2},
-                                                    {0,0,1,1,2,2},{0,2,1,1,2,0}};
-        for(auto &ln: lines) {
-            int a = local_winner[ln[0]][ln[1]];
-            int b = local_winner[ln[2]][ln[3]];
-            int c = local_winner[ln[4]][ln[5]];
-            if(a!=0 && a==b && b==c) return a;
-        }
-        // draw
-        for(int i=0;i<3;++i) for(int j=0;j<3;++j) {
-            bool full = true;
-            for(int ii=0;ii<3;++ii)
-                for(int jj=0;jj<3;++jj)
-                    if(board[3*i+ii][3*j+jj] == 0) full = false;
-            if(local_winner[i][j] == 0 && !full) return numeric_limits<int>::min();
-        }
-        return 0;
+        if(winner == 1)  return 1;
+        if(winner == -1) return -1;
+        if(winner == 2)  return 0;  // draw
+        return numeric_limits<int>::min(); // ongoing
     }
 };
 
@@ -183,8 +179,11 @@ struct Node {
 
     void backpropagate(int result) {
         visits++;
-        if(parent && result == parent->state.next_player) wins++;
-        if(parent) parent->backpropagate(result);
+        if(parent) {
+            int mover = parent->state.turnX ? 1 : -1;
+            if(result == mover) wins++;
+            parent->backpropagate(result);
+        }
     }
 
     void mcts_iteration(mt19937 &rng) {
@@ -249,15 +248,12 @@ int main() {
             }
         }
         pair<int,int> best_move = best ? best->move : valid_moves[rng()%valid_moves.size()];
-        // ensure move valid
         if(find(valid_moves.begin(), valid_moves.end(), best_move) == valid_moves.end()) {
             best_move = valid_moves[rng()%valid_moves.size()];
         }
 
         cout << best_move.first << " " << best_move.second << endl;
         state.apply_move(best_move);
-        
-        // clean up
         delete root;
     }
     return 0;
