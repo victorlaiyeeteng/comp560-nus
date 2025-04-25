@@ -16,3 +16,9 @@ Our problem will be based on this game, 'Ultimate Tic Tac Toe'. The game consist
 Minimax with alpha-beta pruning final version: minimax-v2.py
 MCTS with optimization: mcts-v2.py
 
+### Slide Deck of Final Presentation
+Found in Ultimate TicTacToe Slide Deck.pdf
+
+### Final Report
+Found in Ultimate TicTacToe Project Report.pdf
+
